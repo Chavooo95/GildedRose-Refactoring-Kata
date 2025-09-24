@@ -20,8 +20,6 @@ class GildedRoseTest extends TestCase
         $this->assertSame('foo', $items[0]->name);
     }
 
-    // ... existing code ...
-
     public function testNormalItemDegradesQualityAndSellInEachDay(): void
     {
         $items = [new Item('Normal Item', 10, 20)];
