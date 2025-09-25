@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace GildedRose;
 
+use GildedRose\Class\AgedBrieUpdater;
+use GildedRose\Class\BackstageUpdater;
+use GildedRose\Class\ConjuredUpdater;
+use GildedRose\Class\NormalUpdater;
+use GildedRose\Class\SulfurasUpdater;
+use GildedRose\Interface\UpdaterStrategy;
+
 final class ItemUpdater
 {
     private const AGED_BRIE = 'Aged Brie';
@@ -13,46 +20,23 @@ final class ItemUpdater
 
     public function update(Item $item): void
     {
-        // Sulfuras no cambia nunca
+        $this->strategyFor($item)->update($item);
+    }
+
+    private function strategyFor(Item $item): UpdaterStrategy
+    {
         if ($item->name === self::SULFURAS) {
-            return;
+            return new SulfurasUpdater();
         }
-
-        // Decidir upgrades/downgrades según nombre usando match
-        $op = match (true) {
-            $item->name === self::AGED_BRIE => function (Item $it): void {
-                $it->quality += ($it->sellIn > 0) ? 1 : 2;
-            },
-            $item->name === self::BACKSTAGE => function (Item $it): void {
-                if ($it->sellIn <= 0) {
-                    $it->quality = 0;
-                } else {
-                    $it->quality += match (true) {
-                        $it->sellIn <= 5 => 3,
-                        $it->sellIn <= 10 => 2,
-                        default => 1,
-                    };
-                }
-            },
-            str_starts_with($item->name, self::CONJURED_PREFIX) => function (Item $it): void {
-                $step = 2;
-                $multiplier = ($it->sellIn <= 0) ? 2 : 1;
-                $it->quality -= $step * $multiplier;
-            },
-            default => function (Item $it): void {
-                $step = 1;
-                $multiplier = ($it->sellIn <= 0) ? 2 : 1;
-                $it->quality -= $step * $multiplier;
-            },
-        };
-
-        // Ejecutar operación
-        $op($item);
-
-        // Decrementa sellIn para todo excepto Sulfuras
-        $item->sellIn -= 1;
-
-        // Límites 0..50
-        $item->quality = max(0, min(50, $item->quality));
+        if ($item->name === self::AGED_BRIE) {
+            return new AgedBrieUpdater();
+        }
+        if ($item->name === self::BACKSTAGE) {
+            return new BackstageUpdater();
+        }
+        if (str_starts_with($item->name, self::CONJURED_PREFIX)) {
+            return new ConjuredUpdater();
+        }
+        return new NormalUpdater();
     }
 }
