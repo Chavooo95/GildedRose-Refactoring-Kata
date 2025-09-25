@@ -9,6 +9,7 @@ use GildedRose\Item;
 
 final class AgedBrieUpdater implements UpdaterStrategy
 {
+
     public function update(Item $item): void
     {
         $item->sellIn -= 1;
